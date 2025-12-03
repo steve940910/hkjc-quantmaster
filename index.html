@@ -10,83 +10,69 @@
         body { background-color: #0f172a; color: #e2e8f0; font-family: "Microsoft JhengHei", sans-serif; }
         .card { background-color: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; }
         
-        /* --- 評級標籤顏色設定 --- */
         .rank-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; min-width: 60px; text-align: center; }
-        
-        .rank-Banker { background-color: #ef4444; color: white; } /* 紅色 (膽) */
-        .rank-Core { background-color: #f59e0b; color: black; }   /* 黃色 (核心) */
+        .rank-Banker { background-color: #ef4444; color: white; }
+        .rank-Core { background-color: #f59e0b; color: black; }
         .rank-Value { background-color: #1d4ed8; color: #bfdbfe; border: 1px solid #3b82f6; } 
-        .rank-Risk { background-color: #7c3aed; color: #ddd6fe; } /* 紫色 (風險) */
-        .rank-Average { background-color: #047857; color: #6ee7b7; border: 1px solid #10b981; } /* 綠色 (平均) */
-        .rank-Low { background-color: #334155; color: #94a3b8; }  /* 灰色 (低) */
+        .rank-Risk { background-color: #7c3aed; color: #ddd6fe; }
+        .rank-Average { background-color: #047857; color: #6ee7b7; border: 1px solid #10b981; }
+        .rank-Low { background-color: #334155; color: #94a3b8; }
 
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #10b981; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .race-btn.active { transform: scale(1.05); }
     </style>
 </head>
 <body class="p-4 lg:p-8">
 
 <div class="max-w-6xl mx-auto space-y-6">
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-4">
         <div>
-            <h1 class="text-3xl font-bold text-emerald-400 flex items-center gap-2">🏇 賽馬量化大師</h1>
-            <p class="text-slate-400 text-sm">Public Viewer v1.1</p>
+            <h1 class="text-3xl font-bold text-emerald-400 flex items-center gap-2">
+                🏇 賽馬量化大師
+            </h1>
+            <p class="text-slate-400 text-sm">Public Viewer v1.2</p>
         </div>
-        <div class="flex items-center gap-2 bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-lg">
-            <span class="text-xs text-slate-400">📂 選擇賽事：</span>
-            <select id="history-select" onchange="loadHistory()" class="bg-slate-900 text-white text-sm border border-slate-600 rounded px-2 py-1 outline-none focus:border-emerald-500 transition-colors">
-                <option value="">載入中...</option>
-            </select>
-            <button onclick="fetchHistoryList()" class="text-emerald-400 hover:text-emerald-300 p-1 rounded hover:bg-slate-700 transition">🔄</button>
+        
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-3 bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-lg">
+                <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">📅 日期：</span>
+                <select id="date-select" onchange="onDateChange()" class="bg-slate-900 text-white text-sm border border-slate-600 rounded px-2 py-1 outline-none focus:border-emerald-500 transition-colors font-mono cursor-pointer">
+                    <option value="">載入中...</option>
+                </select>
+                <button onclick="fetchHistoryList()" class="bg-slate-700 hover:bg-slate-600 text-emerald-400 p-1 rounded transition" title="重新整理列表">
+                    🔄
+                </button>
+            </div>
         </div>
     </header>
 
-    <div id="loading-screen" class="text-center py-20">
-        <div class="loader w-12 h-12 border-4 border-emerald-500 border-t-transparent"></div>
-        <p class="text-slate-400 mt-4 animate-pulse">正在讀取賽事數據庫...</p>
+    <div id="race-buttons-container" class="flex flex-wrap gap-2 animate-fade-in">
+        <div class="text-slate-500 text-sm italic py-2">等待選擇日期...</div>
     </div>
 
     <div id="dashboard" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
-        
         <div class="lg:col-span-2 space-y-6">
-            
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div class="card bg-slate-800 py-3">
-                    <span class="text-slate-500 text-xs uppercase tracking-wider">場次</span>
-                    <div id="race-no" class="text-3xl font-bold text-white">--</div>
-                    <div id="race-venue" class="text-xs text-emerald-400 font-mono">--</div>
-                </div>
-                <div class="card bg-slate-800 py-3">
-                    <span class="text-slate-500 text-xs uppercase tracking-wider">班次/跑道</span>
-                    <div id="race-class" class="text-lg font-bold text-white mt-1">--</div>
-                    <div id="race-course" class="text-xs text-blue-400 font-mono">--</div>
-                </div>
-                <div class="card bg-slate-800 py-3">
-                    <span class="text-slate-500 text-xs uppercase tracking-wider">路程</span>
-                    <div id="race-dist" class="text-3xl font-bold text-white">--</div>
-                </div>
-                <div class="card bg-slate-800 py-3 border border-yellow-900/30 bg-yellow-900/5">
-                    <span class="text-slate-500 text-xs uppercase tracking-wider">步速 PPI</span>
-                    <div id="race-ppi" class="text-xl font-bold text-yellow-400 mt-1">--</div>
-                </div>
+                <div class="card bg-slate-800 py-3"><span class="text-slate-500 text-xs uppercase">場次</span><div id="race-no" class="text-2xl font-bold text-white">--</div><div id="race-venue" class="text-xs text-emerald-400">--</div></div>
+                <div class="card bg-slate-800 py-3"><span class="text-slate-500 text-xs uppercase">班次/跑道</span><div id="race-class" class="text-lg font-bold text-white mt-1">--</div><div id="race-course" class="text-xs text-blue-400">--</div></div>
+                <div class="card bg-slate-800 py-3"><span class="text-slate-500 text-xs uppercase">路程</span><div id="race-dist" class="text-2xl font-bold text-white">--</div></div>
+                <div class="card bg-slate-800 py-3 border border-yellow-900/50"><span class="text-slate-500 text-xs uppercase">步速 PPI</span><div id="race-ppi" class="text-xl font-bold text-yellow-400 mt-1">--</div></div>
             </div>
 
             <div class="card border border-purple-500/30 bg-purple-900/10">
-                <h3 class="text-lg font-bold mb-3 text-purple-300 flex items-center gap-2">
-                    🧠 智能策略建議
-                </h3>
-                <div id="strategy-content" class="text-sm text-slate-300 space-y-2 leading-relaxed"></div>
+                <h3 class="text-lg font-bold mb-2 text-purple-300 flex items-center gap-2">🧠 智能策略建議</h3>
+                <div id="strategy-content" class="text-sm text-slate-300 space-y-2"></div>
             </div>
 
             <div id="betting-slip-card" class="hidden card border border-blue-500/30 bg-blue-900/10">
-                <h3 class="text-lg font-bold mb-3 text-blue-300 flex items-center gap-2">
-                    🎯 投注看板 (Betting Slip)
-                </h3>
+                <h3 class="text-lg font-bold mb-3 text-blue-300 flex items-center gap-2">🎯 投注看板 (Betting Slip)</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
                         <div class="text-xs text-slate-400 mb-2 uppercase tracking-wider">🛡️ 穩健出擊 (Standard)</div>
                         <div class="flex items-center gap-2 mb-2">
-                            <span class="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">膽</span>
+                            <span class="rank-badge-label bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">膽</span>
                             <div id="slip-banker" class="font-bold text-lg text-white">--</div>
                         </div>
                         <div class="flex items-start gap-2">
@@ -96,57 +82,36 @@
                     </div>
                     <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
                         <div class="text-xs text-slate-400 mb-2 uppercase tracking-wider">💣 刀仔鋸樹 (Value Hunt)</div>
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">變</span>
-                            <div id="slip-wildcard" class="font-bold text-lg text-blue-300">--</div>
-                        </div>
-                        <div class="text-sm text-slate-400 mb-1">
-                            <span class="text-xs bg-slate-700 px-1 rounded">理由</span> 
-                            <span id="slip-wildcard-reason" class="italic text-slate-300">--</span>
-                        </div>
+                        <div id="slip-wildcard" class="flex flex-col gap-2">
+                            </div>
+                        <div style="display:none"><span id="slip-wildcard-reason"></span></div>
                     </div>
                 </div>
             </div>
 
             <div class="card">
-                <h3 class="text-lg font-bold mb-4 text-slate-200 flex justify-between items-center">
-                    <span>📈 DMR 能力分佈</span>
-                    <span id="race-date-display" class="text-sm font-mono text-slate-500">--</span>
-                </h3>
-                <div class="relative h-[400px] w-full">
-                    <canvas id="dmrChart"></canvas>
-                </div>
+                <h3 class="text-lg font-bold mb-4 text-slate-200 flex justify-between"><span>📈 DMR 能力分佈</span><span id="race-date-display" class="text-sm font-normal text-slate-500">--</span></h3>
+                <div class="relative h-[400px] w-full"><canvas id="dmrChart"></canvas></div>
             </div>
         </div>
 
         <div class="lg:col-span-1 flex flex-col gap-6">
-            
             <div class="card flex-grow flex flex-col" style="max-height: 600px;">
                 <h3 class="text-lg font-bold mb-4 text-slate-200">📋 價值分析表</h3>
-                <div class="overflow-y-auto flex-grow pr-1 custom-scrollbar">
+                <div class="overflow-y-auto flex-grow pr-1">
                     <table class="w-full text-sm text-left text-slate-300">
-                        <thead class="text-xs text-slate-400 uppercase bg-slate-800 sticky top-0 z-10">
-                            <tr>
-                                <th class="px-2 py-3 text-center w-10">No.</th>
-                                <th class="px-2 py-3">馬名 (CN)</th>
-                                <th class="px-2 py-3 text-right">DMR</th>
-                                <th class="px-2 py-3 text-center w-20">評級</th>
-                            </tr>
+                        <thead class="text-xs text-slate-400 uppercase bg-slate-800 sticky top-0">
+                            <tr><th class="px-2 py-2">No.</th><th class="px-2 py-2">馬名 (CN)</th><th class="px-2 py-2 text-right">DMR</th><th class="px-2 py-2 text-center">評級</th></tr>
                         </thead>
-                        <tbody id="horse-table-body" class="divide-y divide-slate-700">
-                            </tbody>
+                        <tbody id="horse-table-body" class="divide-y divide-slate-700"></tbody>
                     </table>
                 </div>
             </div>
 
-            <div id="result-display-card" class="hidden card border border-yellow-600/30 bg-yellow-900/10 shadow-lg shadow-yellow-900/5">
-                <h3 class="text-lg font-bold mb-3 text-yellow-400 flex items-center gap-2">
-                    🏆 賽事結果
-                </h3>
-                <div class="space-y-2" id="result-list">
-                    </div>
+            <div id="result-display-card" class="hidden card border border-yellow-600/30 bg-yellow-900/10 shadow-lg">
+                <h3 class="text-lg font-bold mb-3 text-yellow-400 flex items-center gap-2">🏆 賽事結果</h3>
+                <div class="space-y-2" id="result-list"></div>
             </div>
-
         </div>
     </div>
 
@@ -170,6 +135,7 @@
             © 2025 HKJC Quant Master. Powered by Gemini AI. For reference only.
         </div>
     </div>
+
 </div>
 
 <script>
@@ -180,15 +146,14 @@
     // ==========================================
     
     let myChart = null;
+    let currentData = null;
+    let fullHistoryList = []; 
 
-    // 頁面載入後，自動執行抓取
     window.onload = function() { fetchHistoryList(); };
 
     function renderDashboard(data) {
-        document.getElementById('loading-screen').classList.add('hidden');
         document.getElementById('dashboard').classList.remove('hidden');
-
-        // 1. 更新基本資訊
+        
         document.getElementById('race-date-display').innerText = data.race_info.date;
         document.getElementById('race-venue').innerText = data.race_info.venue;
         document.getElementById('race-no').innerText = "R" + data.race_info.race_no;
@@ -201,49 +166,37 @@
         tbody.innerHTML = '';
         const sortedHorses = [...data.horses].sort((a, b) => b.dmr_score - a.dmr_score);
         
-        // 賽果變數 (改用 Array filter 處理平頭)
         const resultCard = document.getElementById('result-display-card');
         const resultList = document.getElementById('result-list');
-        
-        // 【修正 1】篩選出所有名次 <= 4 的馬，並按名次排序 (支援平頭)
-        const winners = sortedHorses.filter(h => h.actual_placing && h.actual_placing <= 4)
-                                    .sort((a, b) => a.actual_placing - b.actual_placing);
+        let hasResults = false;
+        let results = []; 
 
-        // 生成策略建議
         generateStrategy(sortedHorses);
-        generateBettingSlip(sortedHorses);
+        generateBettingSlip(sortedHorses); // 使用 Strict Value 邏輯
 
-        // 2. 迴圈處理馬匹資料 (表格渲染)
         sortedHorses.forEach(h => {
-            // 處理評級 Badge 顏色與文字
             let badgeClass = 'rank-Low';
             let badgeText = h.rank_prediction;
 
             if(h.rank_prediction.includes('Banker')) { badgeClass = 'rank-Banker'; badgeText = 'BANKER'; }
             else if(h.rank_prediction.includes('Core')) { badgeClass = 'rank-Core'; badgeText = 'CORE'; }
-            else if(h.rank_prediction.includes('Value')) { 
-                badgeClass = 'rank-Value'; 
-                badgeText = 'Value**'; // 【修正 2】改為 Value**
-            } 
+            else if(h.rank_prediction.includes('Value')) { badgeClass = 'rank-Value'; badgeText = 'VALUE**'; }
             else if(h.rank_prediction.includes('Risk')) { badgeClass = 'rank-Risk'; badgeText = 'RISK'; }
             else if(h.rank_prediction.includes('Average')) { badgeClass = 'rank-Average'; badgeText = 'AVG'; }
             else { badgeText = 'LOW'; }
 
-            const displayName = h.name_ch ? h.name_ch : h.name;
-            
-            // 表格內的賽果標記
-            let placingHtml = '';
-            if(h.actual_placing && h.actual_placing <= 4) {
-                placingHtml = `<span class="placing-badge p-${h.actual_placing}">${h.actual_placing}</span>`;
+            if (h.actual_placing && h.actual_placing <= 4) {
+                hasResults = true;
+                results.push(h);
             }
 
+            const displayName = h.name_ch ? h.name_ch : h.name;
+            
             const row = `
                 <tr class="hover:bg-slate-800 transition-colors border-b border-slate-800 last:border-0">
                     <td class="px-2 py-3 font-bold text-slate-400 text-center font-mono">${h.number}</td>
                     <td class="px-2 py-3">
-                        <div class="font-medium text-base text-slate-200 flex items-center gap-2">
-                            ${displayName} ${placingHtml}
-                        </div>
+                        <div class="font-medium text-base text-slate-200">${displayName}</div>
                         <div class="text-xs text-slate-600">${h.name}</div>
                         ${h.tir_bonus !== '+0.0' && h.tir_bonus !== '0' && h.tir_bonus !== "'+0.0" ? `<div class="text-xs text-blue-400 mt-1">TIR: ${h.tir_bonus.replace("'","")}</div>` : ''}
                     </td>
@@ -254,21 +207,19 @@
             tbody.innerHTML += row;
         });
 
-        // 3. 渲染賽果框 (支援平頭顯示)
-        if (winners.length > 0) {
+        if (hasResults) {
             resultCard.classList.remove('hidden');
+            results.sort((a, b) => a.actual_placing - b.actual_placing);
             let html = '';
-            
-            // 定義樣式對照表
             const medalMap = { 1: '🥇 冠軍', 2: '🥈 亞軍', 3: '🥉 季軍', 4: '殿軍' };
-            const colorMap = { 1: 'text-yellow-400', 2: 'text-slate-300', 3: 'text-orange-400', 4: 'text-slate-400' };
-            const bgMap = { 1: 'bg-yellow-400/10', 2: 'bg-slate-400/10', 3: 'bg-orange-400/10', 4: 'bg-slate-400/5' };
+            const textColors = ['text-yellow-400', 'text-slate-300', 'text-orange-400', 'text-slate-400'];
+            const bgColors = ['bg-yellow-400/10', 'bg-slate-400/10', 'bg-orange-400/10', 'bg-slate-400/5'];
 
-            winners.forEach(h => {
+            results.forEach((h, index) => {
                 const p = h.actual_placing;
                 const medalText = medalMap[p] || `第${p}名`;
-                const textColor = colorMap[p] || 'text-slate-500';
-                const bgColor = bgMap[p] || '';
+                const textColor = index < 4 ? textColors[index] : 'text-slate-500';
+                const bgColor = index < 4 ? bgColors[index] : '';
 
                 html += `
                     <div class="flex justify-between items-center border-b border-yellow-900/30 pb-2 last:border-0 ${bgColor} p-2 rounded mb-1">
@@ -286,19 +237,16 @@
             resultCard.classList.add('hidden');
         }
 
-        // 4. 圖表繪製
         const ctx = document.getElementById('dmrChart').getContext('2d');
         if(myChart) myChart.destroy();
         
         const labels = sortedHorses.map(h => h.number + '.' + (h.name_ch || h.name));
         const dmrData = sortedHorses.map(h => h.dmr_score);
-        
         const colors = sortedHorses.map(h => {
-            if(h.actual_placing == 1) return '#facc15'; // 冠軍金
             if(h.rank_prediction.includes('Banker')) return '#ef4444';
             if(h.rank_prediction.includes('Core')) return '#f59e0b';
             if(h.rank_prediction.includes('Value')) return '#3b82f6';
-            if(h.rank_prediction.includes('Average')) return '#065f46';
+            if(h.rank_prediction.includes('Average')) return '#047857';
             if(h.rank_prediction.includes('Risk')) return '#8b5cf6';
             if(h.rank_prediction.includes('Low')) return '#a16207';
             return '#10b981';
@@ -307,24 +255,10 @@
         myChart = new Chart(ctx, {
             type: 'bar',
             data: { labels: labels, datasets: [{ label: 'DMR', data: dmrData, backgroundColor: colors, borderRadius: 4 }] },
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                scales: { 
-                    y: { 
-                        beginAtZero: false, 
-                        min: 60, 
-                        grid: { color: '#334155' }, 
-                        ticks: { color: '#94a3b8' } 
-                    }, 
-                    x: { grid: { display: false }, ticks: { color: '#94a3b8' } } 
-                }, 
-                plugins: { legend: { display: false } } 
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: false, min: 60, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }, x: { grid: { display: false }, ticks: { color: '#94a3b8' } } }, plugins: { legend: { display: false } } }
         });
     }
 
-    // --- 邏輯函數 (保持不變) ---
     function generateStrategy(sortedHorses) {
         const box = document.getElementById('strategy-content');
         if(sortedHorses.length < 3) { box.innerHTML = "數據不足，無法分析。"; return; }
@@ -346,60 +280,112 @@
         const card = document.getElementById('betting-slip-card');
         if (sortedHorses.length < 4) { card.classList.add('hidden'); return; }
         card.classList.remove('hidden');
-        const banker = sortedHorses[0];
-        document.getElementById('slip-banker').innerHTML = `<span class="text-xl">${banker.number}</span> <span class="text-sm ml-1 text-slate-300">${banker.name_ch || banker.name}</span>`;
-        const legs = sortedHorses.slice(1, 4);
-        let legsHTML = legs.map(h => `<span class="bg-slate-700 px-2 py-0.5 rounded mx-1 border border-slate-600 text-slate-300 font-mono">${h.number}</span>`).join("");
-        document.getElementById('slip-legs').innerHTML = legsHTML;
-        let wildcard = sortedHorses.slice(2).find(h => h.rank_prediction.includes('Value') || h.rank_prediction.includes('Risk') || (h.tir_bonus && (h.tir_bonus.includes('+2') || h.tir_bonus.includes('+3'))));
-        if (!wildcard && sortedHorses.length > 4) wildcard = sortedHorses[4];
-        if (wildcard) {
-            document.getElementById('slip-wildcard').innerHTML = `<span class="text-xl">${wildcard.number}</span> <span class="text-sm ml-1 text-slate-300">${wildcard.name_ch || wildcard.name}</span>`;
-            let reason = "DMR 評分具競爭力";
-            if (wildcard.tir_bonus && wildcard.tir_bonus !== '+0.0' && wildcard.tir_bonus !== '0') reason = `隱藏實力: ${wildcard.tir_bonus.replace(/'/g, "")}`;
-            else if (wildcard.rank_prediction.includes('Value')) reason = "模型判定為高值博率";
-            document.getElementById('slip-wildcard-reason').innerText = reason;
+
+        // Standard
+        const h1 = sortedHorses[0];
+        const h2 = sortedHorses[1];
+        const gap1_2 = h1.dmr_score - h2.dmr_score;
+
+        let bankerHTML = "";
+        let legsHTML = "";
+
+        if (gap1_2 >= 3.0) {
+            bankerHTML = `<span class="text-xl font-bold text-red-400">${h1.number}</span> <span class="text-sm ml-1 text-slate-300">${h1.name_ch || h1.name}</span>`;
+            legsHTML = sortedHorses.slice(1, 4).map(h => `<span class="bg-slate-700 px-2 py-0.5 rounded mx-1 border border-slate-600 text-slate-300 font-mono">${h.number}</span>`).join("");
+            const badge = document.querySelector('#betting-slip-card .rank-badge-label') || document.querySelector('#betting-slip-card .bg-yellow-600');
+            if(badge) { badge.className = "rank-badge-label bg-red-600 text-white text-xs font-bold px-2 py-1 rounded"; badge.innerText = "膽"; }
         } else {
-            document.getElementById('slip-wildcard').innerText = "無推薦"; document.getElementById('slip-wildcard-reason').innerText = "-";
+            bankerHTML = `<div class="flex flex-col gap-1"><div class="flex items-center"><span class="text-lg font-bold text-yellow-400 w-6 text-center">${h1.number}</span> <span class="text-xs text-slate-400">${h1.name_ch || h1.name}</span></div><div class="flex items-center"><span class="text-lg font-bold text-yellow-400 w-6 text-center">${h2.number}</span> <span class="text-xs text-slate-400">${h2.name_ch || h2.name}</span></div></div>`;
+            legsHTML = sortedHorses.slice(2, 5).map(h => `<span class="bg-slate-700 px-2 py-0.5 rounded mx-1 border border-slate-600 text-slate-300 font-mono">${h.number}</span>`).join("");
+            const badge = document.querySelector('#betting-slip-card .rank-badge-label') || document.querySelector('#betting-slip-card .bg-red-600');
+            if(badge) { badge.className = "rank-badge-label bg-yellow-600 text-black text-xs font-bold px-2 py-1 rounded"; badge.innerText = "雙膽"; }
+        }
+        document.getElementById('slip-banker').innerHTML = bankerHTML;
+        document.getElementById('slip-legs').innerHTML = legsHTML;
+
+        // Value Hunt (Strict Value Mode)
+        const valuePicks = sortedHorses.filter(h => h.rank_prediction.includes('Value'));
+        const wildcardContainer = document.getElementById('slip-wildcard');
+        const reasonContainer = document.querySelector('#slip-wildcard-reason').parentElement;
+        if(reasonContainer) reasonContainer.style.display = 'none';
+        wildcardContainer.innerHTML = '';
+
+        if (valuePicks.length > 0) {
+            let listHTML = `<div class="flex flex-col gap-2 w-full">`;
+            valuePicks.forEach(h => {
+                let subText = "高值博率";
+                if (parseFloat(h.tir_bonus) >= 1.5) subText = `TIR ${h.tir_bonus} 隱藏實力`;
+                listHTML += `<div class="flex items-center justify-between bg-slate-800/80 p-2 rounded border border-slate-700 hover:bg-slate-700/80 transition"><div class="flex items-center gap-3"><span class="text-xl font-bold text-blue-400 font-mono w-6 text-center">${h.number}</span><div class="flex flex-col leading-none gap-1"><span class="text-sm text-slate-200 font-medium">${h.name_ch || h.name}</span><span class="text-[10px] text-slate-500">${subText}</span></div></div><div><span class="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded font-bold tracking-wider">VALUE</span></div></div>`;
+            });
+            listHTML += `</div>`;
+            wildcardContainer.innerHTML = listHTML;
+        } else {
+            wildcardContainer.innerHTML = `<div class="flex flex-col items-center justify-center h-full py-2 opacity-50"><span class="text-slate-500 text-sm">本場無 Value 評級馬</span></div>`;
         }
     }
 
     function fetchHistoryList() {
-        const select = document.getElementById('history-select');
-        select.innerHTML = '<option>載入中...</option>';
-        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'get_race_list' }) }).then(res => res.json()).then(data => {
-            select.innerHTML = '<option value="">-- 選擇過往賽事 --</option>';
-            if(data.list && data.list.length > 0) {
-                data.list.forEach(item => {
-                    let opt = document.createElement('option');
-                    opt.value = JSON.stringify({ date: item.date, race_no: item.race_no });
-                    opt.text = item.display;
-                    select.add(opt);
-                });
-                // 自動載入最新一天 R1
-                const latestDate = data.list[0].date;
-                const todaysRaces = data.list.filter(item => item.date === latestDate);
-                todaysRaces.sort((a, b) => Number(a.race_no) - Number(b.race_no));
-                if (todaysRaces[0]) {
-                    select.value = JSON.stringify({ date: todaysRaces[0].date, race_no: todaysRaces[0].race_no });
-                    loadHistory();
+        const dateSelect = document.getElementById('date-select');
+        dateSelect.innerHTML = '<option>載入中...</option>';
+        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'get_race_list' }) })
+            .then(res => res.json())
+            .then(data => {
+                if(data.list && data.list.length > 0) {
+                    fullHistoryList = data.list; 
+                    const uniqueDates = [...new Set(data.list.map(item => item.date))];
+                    dateSelect.innerHTML = '';
+                    uniqueDates.forEach(date => {
+                        let opt = document.createElement('option');
+                        opt.value = date;
+                        opt.text = date;
+                        dateSelect.add(opt);
+                    });
+                    if (uniqueDates.length > 0) {
+                        dateSelect.value = uniqueDates[0]; 
+                        onDateChange(); 
+                    }
+                } else {
+                    dateSelect.innerHTML = '<option>無資料</option>';
                 }
-            } else {
-                select.innerHTML = '<option>暫無資料</option>';
-                document.getElementById('loading-screen').innerHTML = '<p>資料庫是空的。</p>';
-            }
-        });
+            })
+            .catch(err => { console.error(err); dateSelect.innerHTML = '<option>連線錯誤</option>'; });
     }
 
-    function loadHistory() {
-        const select = document.getElementById('history-select');
-        if(!select.value) return;
-        const val = JSON.parse(select.value);
-        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'get_race_detail', date: val.date, race_no: val.race_no }) }).then(res => res.json()).then(resp => {
-            if(resp.result === 'success') {
-                renderDashboard(resp.data);
-            }
+    function onDateChange() {
+        const selectedDate = document.getElementById('date-select').value;
+        const container = document.getElementById('race-buttons-container');
+        container.innerHTML = '';
+        const races = fullHistoryList.filter(item => item.date === selectedDate);
+        races.sort((a, b) => Number(a.race_no) - Number(b.race_no));
+        if (races.length === 0) { container.innerHTML = '<span class="text-slate-500">此日期無賽事數據</span>'; return; }
+        races.forEach(race => {
+            const btn = document.createElement('button');
+            btn.innerText = `R${race.race_no}`;
+            btn.className = `race-btn px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 border border-slate-600 bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white`;
+            btn.dataset.raceNo = race.race_no;
+            btn.onclick = () => {
+                document.querySelectorAll('.race-btn').forEach(b => {
+                    b.className = `race-btn px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 border border-slate-600 bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white`;
+                });
+                btn.className = `race-btn px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 border border-emerald-500 bg-emerald-600 text-white shadow-lg shadow-emerald-900/50 transform scale-105 active`;
+                loadHistory(selectedDate, race.race_no);
+            };
+            container.appendChild(btn);
         });
+        if (container.firstChild) container.firstChild.click();
+    }
+
+    function loadHistory(date, raceNo) {
+        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'get_race_detail', date: date, race_no: raceNo }) })
+        .then(res => res.json())
+        .then(resp => {
+            if(resp.result === 'success') {
+                currentData = resp.data;
+                renderDashboard(resp.data);
+                // 這裡移除了原本隱藏/顯示 input-section 的邏輯，因為 viewer 版根本沒有那些 section
+            }
+        })
+        .catch(err => console.error("Load failed", err));
     }
 </script>
 
