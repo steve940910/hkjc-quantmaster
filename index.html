@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HKJC Quant Master</title>
+    <title>HKJC Quant Master (Public)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -22,6 +22,89 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         .race-btn.active { transform: scale(1.05); }
+        
+        /* --- 走位圖 (Speed Map) 樣式 --- */
+        .speed-map-container {
+            display: flex;
+            gap: 4px;
+            margin-top: 10px;
+            height: auto;       
+            min-height: 140px;  
+            padding-bottom: 10px; 
+            border-radius: 8px;
+            overflow: hidden;
+            background: #0f172a;
+            border: 1px solid #334155;
+            position: relative;
+        }
+
+        .speed-zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 24px; 
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        /* 賽道分區顏色 (漸變) */
+        .zone-leader { background: linear-gradient(to bottom, #7f1d1d 0%, #450a0a 100%); border-right: 1px dashed #ef4444; }
+        .zone-onpace { background: linear-gradient(to bottom, #7c2d12 0%, #431407 100%); border-right: 1px dashed #f97316; }
+        .zone-mid    { background: linear-gradient(to bottom, #14532d 0%, #052e16 100%); border-right: 1px dashed #22c55e; }
+        .zone-back   { background: linear-gradient(to bottom, #1e3a8a 0%, #172554 100%); }
+
+        /* 區域標籤 */
+        .zone-label {
+            position: absolute;
+            top: 4px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+        }
+        .zone-leader .zone-label { color: #fca5a5; }
+        .zone-onpace .zone-label { color: #fdba74; }
+        .zone-mid .zone-label    { color: #86efac; }
+        .zone-back .zone-label   { color: #93c5fd; }
+
+        /* 馬號球 */
+        .horse-bead {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3); 
+            border: 2px solid rgba(255,255,255,0.2);
+            z-index: 10;
+            transition: transform 0.2s;
+            cursor: default;
+        }
+
+        .horse-bead:hover { transform: scale(1.2) translateY(-5px); z-index: 20; border-color: white; }
+
+        /* 馬號球顏色 (根據評級) */
+        .bead-Banker { background-color: #ef4444; }
+        .bead-Core   { background-color: #f59e0b; color: black; }
+        .bead-Value  { background-color: #3b82f6; }
+        .bead-Avg    { background-color: #10b981; }
+        .bead-Risk   { background-color: #8b5cf6; }
+        .bead-Low    { background-color: #64748b; }
+
+        .track-hint {
+            font-size: 11px;
+            color: #94a3b8;
+            text-align: right;
+            margin-top: 4px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body class="p-4 lg:p-8">
@@ -30,9 +113,9 @@
     <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-4">
         <div>
             <h1 class="text-3xl font-bold text-emerald-400 flex items-center gap-2">
-                🏇 賽馬量化大師
+                <span class="text-3xl">🏇</span> 賽馬量化大師
             </h1>
-            <p class="text-slate-400 text-sm">Public Viewer v1.2</p>
+            <p class="text-slate-400 text-sm">Public Viewer v1.3</p>
         </div>
         
         <div class="flex flex-wrap items-center gap-3">
@@ -65,6 +148,15 @@
                 <h3 class="text-lg font-bold mb-2 text-purple-300 flex items-center gap-2">🧠 智能策略建議</h3>
                 <div id="strategy-content" class="text-sm text-slate-300 space-y-2"></div>
             </div>
+            
+            <div class="card border border-slate-600/50">
+                <div class="flex justify-between items-end mb-2">
+                    <h3 class="text-lg font-bold text-slate-200 flex items-center gap-2">🏁 預計走位 (Speed Map)</h3>
+                    <span id="map-bias-hint" class="text-xs text-orange-400 font-bold border border-orange-400/30 px-2 py-0.5 rounded bg-orange-900/10">--</span>
+                </div>
+                <div id="speed-map-display" class="speed-map-container"></div>
+                <div id="track-nuance-text" class="track-hint"></div>
+            </div>
 
             <div id="betting-slip-card" class="hidden card border border-blue-500/30 bg-blue-900/10">
                 <h3 class="text-lg font-bold mb-3 text-blue-300 flex items-center gap-2">🎯 投注看板 (Betting Slip)</h3>
@@ -82,8 +174,7 @@
                     </div>
                     <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
                         <div class="text-xs text-slate-400 mb-2 uppercase tracking-wider">💣 刀仔鋸樹 (Value Hunt)</div>
-                        <div id="slip-wildcard" class="flex flex-col gap-2">
-                            </div>
+                        <div id="slip-wildcard" class="flex flex-col gap-2"></div>
                         <div style="display:none"><span id="slip-wildcard-reason"></span></div>
                     </div>
                 </div>
@@ -140,7 +231,7 @@
 
 <script>
     // ==========================================
-    // 🔑 請將此處替換為你的 Apps Script 網址
+    // 🔑 Apps Script URL
     // ==========================================
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwmLL4nDIwmReQ_WGjeekHKlZDBFxTRMfudynfZgukXJzwh50xiqbUHZxzwE5nHAFG2ng/exec"; 
     // ==========================================
@@ -172,7 +263,7 @@
         let results = []; 
 
         generateStrategy(sortedHorses);
-        generateBettingSlip(sortedHorses); // 使用 Strict Value 邏輯
+        generateBettingSlip(sortedHorses);
 
         sortedHorses.forEach(h => {
             let badgeClass = 'rank-Low';
@@ -242,7 +333,8 @@
         
         const labels = sortedHorses.map(h => h.number + '.' + (h.name_ch || h.name));
         const dmrData = sortedHorses.map(h => h.dmr_score);
-        const colors = sortedHorses.map(h => {
+        
+        const baseColors = sortedHorses.map(h => {
             if(h.rank_prediction.includes('Banker')) return '#ef4444';
             if(h.rank_prediction.includes('Core')) return '#f59e0b';
             if(h.rank_prediction.includes('Value')) return '#3b82f6';
@@ -252,11 +344,65 @@
             return '#10b981';
         });
 
+        let clickStates = new Array(sortedHorses.length).fill(0); 
+
         myChart = new Chart(ctx, {
             type: 'bar',
-            data: { labels: labels, datasets: [{ label: 'DMR', data: dmrData, backgroundColor: colors, borderRadius: 4 }] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: false, min: 60, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }, x: { grid: { display: false }, ticks: { color: '#94a3b8' } } }, plugins: { legend: { display: false } } }
+            data: { 
+                labels: labels, 
+                datasets: [{ 
+                    label: 'DMR', 
+                    data: dmrData, 
+                    backgroundColor: [...baseColors], 
+                    borderColor: new Array(sortedHorses.length).fill(undefined),
+                    borderWidth: new Array(sortedHorses.length).fill(0),
+                    borderRadius: 4 
+                }] 
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                scales: { 
+                    y: { beginAtZero: false, min: 60, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }, 
+                    x: { grid: { display: false }, ticks: { color: '#94a3b8' } } 
+                }, 
+                plugins: { legend: { display: false } },
+                
+                onClick: (e, activeElements, chart) => {
+                    if (activeElements.length > 0) {
+                        const index = activeElements[0].index;
+                        clickStates[index] = (clickStates[index] + 1) % 4;
+                        const dataset = chart.data.datasets[0];
+                        
+                        switch (clickStates[index]) {
+                            case 1: 
+                                dataset.backgroundColor[index] = '#facc15'; 
+                                dataset.borderColor[index] = '#ffffff';
+                                dataset.borderWidth[index] = 3;
+                                break;
+                            case 2: 
+                                dataset.backgroundColor[index] = '#f472b6'; 
+                                dataset.borderColor[index] = '#ffffff';
+                                dataset.borderWidth[index] = 3;
+                                break;
+                            case 3: 
+                                dataset.backgroundColor[index] = '#38bdf8'; 
+                                dataset.borderColor[index] = '#ffffff';
+                                dataset.borderWidth[index] = 3;
+                                break;
+                            default: 
+                                dataset.backgroundColor[index] = baseColors[index];
+                                dataset.borderColor[index] = undefined;
+                                dataset.borderWidth[index] = 0;
+                                break;
+                        }
+                        chart.update();
+                    }
+                }
+            }
         });
+        
+        renderSpeedMap(data);
     }
 
     function generateStrategy(sortedHorses) {
@@ -281,7 +427,6 @@
         if (sortedHorses.length < 4) { card.classList.add('hidden'); return; }
         card.classList.remove('hidden');
 
-        // Standard
         const h1 = sortedHorses[0];
         const h2 = sortedHorses[1];
         const gap1_2 = h1.dmr_score - h2.dmr_score;
@@ -303,7 +448,6 @@
         document.getElementById('slip-banker').innerHTML = bankerHTML;
         document.getElementById('slip-legs').innerHTML = legsHTML;
 
-        // Value Hunt (Strict Value Mode)
         const valuePicks = sortedHorses.filter(h => h.rank_prediction.includes('Value'));
         const wildcardContainer = document.getElementById('slip-wildcard');
         const reasonContainer = document.querySelector('#slip-wildcard-reason').parentElement;
@@ -382,10 +526,136 @@
             if(resp.result === 'success') {
                 currentData = resp.data;
                 renderDashboard(resp.data);
-                // 這裡移除了原本隱藏/顯示 input-section 的邏輯，因為 viewer 版根本沒有那些 section
             }
         })
         .catch(err => console.error("Load failed", err));
+    }
+
+// --- 渲染走位圖的核心函數 (v2.1 完整修復版) ---
+    function renderSpeedMap(data) {
+        // 1. 獲取 DOM 元素
+        const mapContainer = document.getElementById('speed-map-display');
+        const biasHint = document.getElementById('map-bias-hint');
+        const nuanceText = document.getElementById('track-nuance-text');
+        
+        // 2. 清空舊圖
+        mapContainer.innerHTML = '';
+        
+        // 3. 初始化區域
+        const zones = {
+            'LEADER':   { id: 'zone-leader', label: '放頭 / 領放', data: [] },
+            'ON-PACE':  { id: 'zone-onpace', label: '跟前 / 積極', data: [] },
+            'MIDFIELD': { id: 'zone-mid',    label: '居中 / 守好位', data: [] },
+            'BACK':     { id: 'zone-back',   label: '後上 / 留後', data: [] }
+        };
+
+        // 4. 將馬匹分配到對應區域
+        data.horses.forEach(h => {
+            const style = h.running_style ? h.running_style.toUpperCase() : 'MIDFIELD';
+            if (zones[style]) {
+                zones[style].data.push(h);
+            } else {
+                zones['MIDFIELD'].data.push(h);
+            }
+        });
+
+        // 5. 判斷場地特性 (完整版 - 你的新邏輯)
+        const venue = data.race_info.venue;
+        const dist = parseInt(data.race_info.distance);
+        let biasMsg = "標準形勢";
+        let nuanceMsg = "路程公平，視乎步速。";
+
+        // --- 跑馬地 (Happy Valley) ---
+        if (venue.includes('Happy Valley') || venue.includes('跑馬地')) {
+            if (dist === 1000) { 
+                biasMsg = "🔥 起步極搶"; 
+                nuanceMsg = "谷草1000米：起步後直路極短，前段爭奪激烈，利前領及內檔。"; 
+            } 
+            else if (dist === 1200) { 
+                biasMsg = "⚡ 轉彎急"; 
+                nuanceMsg = "谷草1200米：起步不久即入彎，排外檔起步較吃虧，需盡快切入。"; 
+            } 
+            else if (dist === 1650 || dist === 1800) { 
+                // 1650 與 1800 形勢相近
+                biasMsg = "🔄 起步即轉彎"; 
+                nuanceMsg = `谷草${dist}米：起步後極短途程即入首彎，外檔馬極易被迫走外疊蝕位。`; 
+            } 
+            else if (dist >= 2200) { 
+                biasMsg = "🐢 長途慢步速"; 
+                nuanceMsg = "長途賽事預計步速偏慢，中段可能出現變奏 (SIT & SPRINT)。"; 
+            }
+        } 
+        // --- 沙田 (Sha Tin) ---
+        else if (venue.includes('Sha Tin') || venue.includes('沙田')) {
+            if (dist === 1000) { 
+                biasMsg = "🚀 直路賽"; 
+                nuanceMsg = "田草1000米直路賽：外檔(10-14檔)通常較有利，單純比拼速度。"; 
+            } 
+            else if (dist === 1200) { 
+                biasMsg = "⚡ 標準短途"; 
+                nuanceMsg = "田草1200米：需經彎道，步速通常偏快，考驗馬匹平衡與後勁。"; 
+            } 
+            else if (dist === 1400) { 
+                biasMsg = "⚖️ 公平路程"; 
+                nuanceMsg = "田草1400米：只有一個長直路與寬彎道，實力馬佔優，檔位影響相對平均。"; 
+            }
+            else if (dist === 1600) { 
+                biasMsg = "📏 長直路起步"; 
+                nuanceMsg = "田草1600米：對面直路起步，取位時間充裕，外檔馬亦有足夠時間切入。"; 
+            }
+            else if (dist === 1800) { 
+                biasMsg = "⚠️ 外檔劣勢"; 
+                nuanceMsg = "田草1800米：起步即入彎 (C跑道尤甚)，外檔馬極難切入，為著名的「外檔墳墓」。"; 
+            }
+            else if (dist === 2000) { 
+                biasMsg = "🏁 起步短直路"; 
+                nuanceMsg = "田草2000米：起步後不久入第一彎，外檔馬需選擇留後或消耗體力搶前。"; 
+            }
+        }
+        
+        // 更新文字
+        biasHint.innerText = biasMsg;
+        nuanceText.innerText = nuanceMsg;
+
+        // 6. 渲染每個區域 HTML (這是你之前可能缺少的部分)
+        Object.keys(zones).forEach(key => {
+            const zone = zones[key];
+            
+            // 根據檔位 (Draw) 進行排序
+            zone.data.sort((a, b) => {
+                const drawA = a.barrier_draw ? parseInt(a.barrier_draw) : 99; 
+                const drawB = b.barrier_draw ? parseInt(b.barrier_draw) : 99;
+                return drawA - drawB;
+            });
+
+            // 生成 HTML
+            const beadsHTML = zone.data.map(h => {
+                let colorClass = 'bead-Low';
+                if(h.rank_prediction.includes('Banker')) colorClass = 'bead-Banker';
+                else if(h.rank_prediction.includes('Core')) colorClass = 'bead-Core';
+                else if(h.rank_prediction.includes('Value')) colorClass = 'bead-Value';
+                else if(h.rank_prediction.includes('Average')) colorClass = 'bead-Avg';
+                else if(h.rank_prediction.includes('Risk')) colorClass = 'bead-Risk';
+                
+                const tooltipText = `${h.number}. ${h.name_ch || h.name} (檔位: ${h.barrier_draw || '-'})`;
+                
+                return `<div class="horse-bead ${colorClass}" title="${tooltipText}">${h.number}</div>`;
+            }).join('');
+
+            // 調整 Flex 寬度 (Happy Valley 1000m Leader 區大一點)
+            let flexGrow = 1;
+            if (key === 'LEADER' && dist === 1000 && venue.includes('Happy Valley')) flexGrow = 1.5;
+
+            const zoneHTML = `
+                <div class="speed-zone ${key === 'LEADER' ? 'zone-leader' : key === 'ON-PACE' ? 'zone-onpace' : key === 'MIDFIELD' ? 'zone-mid' : 'zone-back'}" style="flex: ${flexGrow};">
+                    <div class="zone-label">${zone.label}</div>
+                    <div class="flex flex-col items-center mt-2 gap-1">
+                        ${beadsHTML}
+                    </div>
+                </div>
+            `;
+            mapContainer.innerHTML += zoneHTML;
+        });
     }
 </script>
 
