@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HKJC Quant Master (Public)</title>
+    <title>HKJC Quant Master (ADMIN)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -18,6 +18,9 @@
         .rank-Average { background-color: #047857; color: #6ee7b7; border: 1px solid #10b981; }
         .rank-Low { background-color: #334155; color: #94a3b8; }
 
+        .res-input { width: 3rem; background-color: #1e293b; border: 1px solid #475569; border-radius: 0.25rem; text-align: center; color: white; font-weight: bold; padding: 0.25rem; }
+        .res-input:focus { outline: none; border-color: #10b981; }
+
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #10b981; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
@@ -28,8 +31,8 @@
             display: flex;
             gap: 4px;
             margin-top: 10px;
-            height: auto;       
-            min-height: 140px;  
+            height: auto;       /* 自動高度 */
+            min-height: 140px;  /* 最小高度 */
             padding-bottom: 10px; 
             border-radius: 8px;
             overflow: hidden;
@@ -44,7 +47,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            padding-top: 24px; 
+            padding-top: 24px; /* 留位給標籤 */
             position: relative;
             transition: all 0.3s ease;
         }
@@ -81,6 +84,9 @@
             font-weight: bold;
             font-size: 12px;
             color: white;
+            
+            /* gap-1 已由外層控制，無需 margin-bottom */
+            
             box-shadow: 0 2px 4px rgba(0,0,0,0.3); 
             border: 2px solid rgba(255,255,255,0.2);
             z-index: 10;
@@ -98,6 +104,7 @@
         .bead-Risk   { background-color: #8b5cf6; }
         .bead-Low    { background-color: #64748b; }
 
+        /* 特殊賽道提示 */
         .track-hint {
             font-size: 11px;
             color: #94a3b8;
@@ -113,26 +120,65 @@
     <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-4">
         <div>
             <h1 class="text-3xl font-bold text-emerald-400 flex items-center gap-2">
-                <span class="text-3xl">🏇</span> 賽馬量化大師
+                🏇 HKJC Quant Master
+                <span class="text-xs bg-red-600 text-white px-2 py-1 rounded ml-2">ADMIN</span>
             </h1>
-            <p class="text-slate-400 text-sm">Public Viewer v1.3</p>
+            <p class="text-slate-400 text-sm">後台管理系統 v6.0 </p>
         </div>
         
         <div class="flex flex-wrap items-center gap-3">
+            <button onclick="showInputSection()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-4 rounded-lg shadow-lg shadow-emerald-900/20 transition border border-emerald-500">
+                📝 輸入新數據
+            </button>
+
             <div class="flex items-center gap-3 bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-lg">
                 <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">📅 日期：</span>
                 <select id="date-select" onchange="onDateChange()" class="bg-slate-900 text-white text-sm border border-slate-600 rounded px-2 py-1 outline-none focus:border-emerald-500 transition-colors font-mono cursor-pointer">
                     <option value="">載入中...</option>
                 </select>
-                <button onclick="fetchHistoryList()" class="bg-slate-700 hover:bg-slate-600 text-emerald-400 p-1 rounded transition" title="重新整理列表">
+                <button onclick="fetchHistoryList()" class="bg-slate-700 hover:bg-slate-600 text-emerald-400 p-1 rounded transition" title="手動重新整理列表">
                     🔄
                 </button>
             </div>
         </div>
     </header>
 
-    <div id="race-buttons-container" class="flex flex-wrap gap-2 animate-fade-in">
+<div id="race-buttons-container" class="flex flex-wrap gap-2 animate-fade-in">
         <div class="text-slate-500 text-sm italic py-2">等待選擇日期...</div>
+    </div>
+
+    <div id="parlay-picks-container" class="hidden my-4 p-5 rounded-xl bg-slate-900/80 border-2 border-dashed border-emerald-700/50 shadow-lg animate-fade-in">
+    </div>
+
+    <div id="input-section" class="card relative border-emerald-900/50">
+        <label class="block text-sm font-medium text-emerald-400 mb-2">📥 輸入新賽事數據 (Gemini JSON)：</label>
+        <textarea id="json-input" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-green-400 font-mono focus:outline-none transition-all focus:rows-5 focus:border-emerald-500" placeholder='{ "race_info": ... }'></textarea>
+        
+        <div class="flex flex-col sm:flex-row gap-4 mt-4 items-center">
+            <button onclick="parseData()" class="btn-primary bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-6 rounded-lg w-full sm:w-auto transition">📊 解析數據</button>
+            
+            <div class="flex gap-2 w-full sm:w-auto">
+                <button id="btn-save" onclick="saveToSheet()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-6 rounded-lg transition w-full flex justify-center items-center gap-2">
+                    💾 存入資料庫
+                </button>
+                <button id="btn-publish" onclick="publishDay()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg transition w-full flex justify-center items-center gap-2">
+                    📢 發佈總結
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-entry-section" class="hidden card border-blue-500/30 bg-blue-900/10 shadow-lg">
+        <h3 class="text-lg font-bold mb-4 text-blue-300 flex items-center gap-2">
+            🏆 賽果回填 (Result Entry)
+        </h3>
+        <div class="flex flex-wrap items-end gap-4">
+            <div class="text-center"><label class="block text-xs text-yellow-400 mb-1">1st</label><input type="number" id="res-1" class="res-input ring-1 ring-yellow-500/50" placeholder="#"></div>
+            <div class="text-center"><label class="block text-xs text-gray-300 mb-1">2nd</label><input type="number" id="res-2" class="res-input ring-1 ring-gray-500/50" placeholder="#"></div>
+            <div class="text-center"><label class="block text-xs text-orange-400 mb-1">3rd</label><input type="number" id="res-3" class="res-input ring-1 ring-orange-500/50" placeholder="#"></div>
+            <div class="text-center"><label class="block text-xs text-slate-500 mb-1">4th</label><input type="number" id="res-4" class="res-input" placeholder="#"></div>
+            <button id="btn-update-result" onclick="updateResults()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-6 rounded h-9 ml-auto transition shadow-lg shadow-blue-900/20">更新賽果</button>
+        </div>
     </div>
 
     <div id="dashboard" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
@@ -154,7 +200,9 @@
                     <h3 class="text-lg font-bold text-slate-200 flex items-center gap-2">🏁 預計走位 (Speed Map)</h3>
                     <span id="map-bias-hint" class="text-xs text-orange-400 font-bold border border-orange-400/30 px-2 py-0.5 rounded bg-orange-900/10">--</span>
                 </div>
-                <div id="speed-map-display" class="speed-map-container"></div>
+                
+                <div id="speed-map-display" class="speed-map-container">
+                    </div>
                 <div id="track-nuance-text" class="track-hint"></div>
             </div>
 
@@ -174,7 +222,8 @@
                     </div>
                     <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
                         <div class="text-xs text-slate-400 mb-2 uppercase tracking-wider">💣 刀仔鋸樹 (Value Hunt)</div>
-                        <div id="slip-wildcard" class="flex flex-col gap-2"></div>
+                        <div id="slip-wildcard" class="flex flex-col gap-2">
+                            </div>
                         <div style="display:none"><span id="slip-wildcard-reason"></span></div>
                     </div>
                 </div>
@@ -198,6 +247,30 @@
                     </table>
                 </div>
             </div>
+
+<div id="historical-stats-card" class="card hidden border-t-4 border-slate-600 bg-slate-800/80 mt-4">
+    <h3 class="text-sm font-bold mb-2 text-slate-300 flex justify-between items-center">
+        <span>📚 歷史數據參考</span>
+        <span id="stat-class-label" class="text-xs bg-slate-700 px-2 py-0.5 rounded text-emerald-400">Class --</span>
+    </h3>
+    <div class="grid grid-cols-3 gap-2 text-center text-xs">
+        <div class="bg-slate-900 p-2 rounded border border-slate-700">
+            <div class="text-amber-500 font-bold mb-1">CORE</div>
+            <div class="text-slate-400">勝: <span id="stat-core-win" class="text-white">--</span></div>
+            <div class="text-slate-400">位: <span id="stat-core-top3" class="text-white">--</span></div>
+        </div>
+        <div class="bg-slate-900 p-2 rounded border border-slate-700">
+            <div class="text-blue-400 font-bold mb-1">VALUE</div>
+            <div class="text-slate-400">勝: <span id="stat-value-win" class="text-white">--</span></div>
+            <div class="text-slate-400">位: <span id="stat-value-top3" class="text-white">--</span></div>
+        </div>
+        <div class="bg-slate-900 p-2 rounded border border-slate-700">
+            <div class="text-emerald-400 font-bold mb-1">AVERAGE</div>
+            <div class="text-slate-400">勝: <span id="stat-avg-win" class="text-white">--</span></div>
+            <div class="text-slate-400">位: <span id="stat-avg-top3" class="text-white">--</span></div>
+        </div>
+    </div>
+</div>
 
             <div id="result-display-card" class="hidden card border border-yellow-600/30 bg-yellow-900/10 shadow-lg">
                 <h3 class="text-lg font-bold mb-3 text-yellow-400 flex items-center gap-2">🏆 賽事結果</h3>
@@ -231,16 +304,50 @@
 
 <script>
     // ==========================================
-    // 🔑 Apps Script URL
+    // 🔑 請將此處替換為你的 Apps Script 網址
     // ==========================================
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwmLL4nDIwmReQ_WGjeekHKlZDBFxTRMfudynfZgukXJzwh50xiqbUHZxzwE5nHAFG2ng/exec"; 
     // ==========================================
+
+    // 歷史班次勝率與上名率統計 (從你的 CSV 數據庫提取)
+    const historicalStats = {
+    	"Class 1": { Core: { win: "40.0%", top3: "60.0%" }, Value: { win: "0.0%", top3: "50.0%" }, Average: { win: "0.0%", top3: "0.0%" } },
+    	"Class 2": { Core: { win: "16.9%", top3: "33.7%" }, Value: { win: "9.2%", top3: "36.8%" }, Average: { win: "5.4%", top3: "26.9%" } },
+    	"Class 3": { Core: { win: "11.3%", top3: "37.2%" }, Value: { win: "11.7%", top3: "30.7%" }, Average: { win: "7.8%", top3: "24.3%" } },
+   	"Class 4": { Core: { win: "14.6%", top3: "39.6%" }, Value: { win: "9.3%", top3: "25.8%" }, Average: { win: "6.9%", top3: "24.5%" } },
+    	"Class 5": { Core: { win: "9.8%", top3: "36.8%" }, Value: { win: "7.5%", top3: "27.2%" }, Average: { win: "10.5%", top3: "22.8%" } }
+     };
     
     let myChart = null;
     let currentData = null;
     let fullHistoryList = []; 
 
     window.onload = function() { fetchHistoryList(); };
+
+    // --- 切換回輸入模式 ---
+    function showInputSection() {
+        document.getElementById('input-section').classList.remove('hidden');
+        document.getElementById('result-entry-section').classList.add('hidden');
+        document.getElementById('dashboard').classList.add('hidden');
+        document.querySelectorAll('.race-btn').forEach(b => {
+             b.className = `race-btn px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 border border-slate-600 bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white`;
+        });
+        currentData = null;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function parseData() {
+        const input = document.getElementById('json-input').value;
+        try {
+            const data = JSON.parse(input);
+            currentData = data;
+            document.getElementById('result-entry-section').classList.add('hidden');
+            document.getElementById('result-display-card').classList.add('hidden');
+            document.getElementById('btn-save').style.display = 'flex';
+            document.getElementById('btn-publish').style.display = 'flex';
+            renderDashboard(data);
+        } catch (e) { alert("JSON 格式錯誤"); }
+    }
 
     function renderDashboard(data) {
         document.getElementById('dashboard').classList.remove('hidden');
@@ -249,6 +356,25 @@
         document.getElementById('race-venue').innerText = data.race_info.venue;
         document.getElementById('race-no').innerText = "R" + data.race_info.race_no;
         document.getElementById('race-class').innerText = data.race_info.class || "-";
+const raceClass = data.race_info.class; // 取得當前場次的班次
+        const statCard = document.getElementById('historical-stats-card');
+        
+        // 檢查該班次是否有對應的歷史數據
+        if (raceClass && historicalStats[raceClass]) {
+            statCard.classList.remove('hidden');
+            document.getElementById('stat-class-label').innerText = raceClass;
+            
+            const stats = historicalStats[raceClass];
+            document.getElementById('stat-core-win').innerText = stats.Core.win;
+            document.getElementById('stat-core-top3').innerText = stats.Core.top3;
+            document.getElementById('stat-value-win').innerText = stats.Value.win;
+            document.getElementById('stat-value-top3').innerText = stats.Value.top3;
+            document.getElementById('stat-avg-win').innerText = stats.Average.win;
+            document.getElementById('stat-avg-top3').innerText = stats.Average.top3;
+        } else {
+            // 如果是級制賽 (Group) 或找不到對應班次，則隱藏卡片
+            statCard.classList.add('hidden');
+        }
         document.getElementById('race-course').innerText = data.race_info.course || "-";
         document.getElementById('race-dist').innerText = data.race_info.distance + "m";
         document.getElementById('race-ppi').innerText = data.race_info.ppi_score;
@@ -263,7 +389,7 @@
         let results = []; 
 
         generateStrategy(sortedHorses);
-        generateBettingSlip(sortedHorses);
+        generateBettingSlip(sortedHorses); // 使用 Strict Value 邏輯
 
         sortedHorses.forEach(h => {
             let badgeClass = 'rank-Low';
@@ -334,6 +460,7 @@
         const labels = sortedHorses.map(h => h.number + '.' + (h.name_ch || h.name));
         const dmrData = sortedHorses.map(h => h.dmr_score);
         
+        // --- 1. 定義基礎顏色 ---
         const baseColors = sortedHorses.map(h => {
             if(h.rank_prediction.includes('Banker')) return '#ef4444';
             if(h.rank_prediction.includes('Core')) return '#f59e0b';
@@ -344,8 +471,53 @@
             return '#10b981';
         });
 
+        // --- 2. 初始化狀態 (閉包變數) ---
         let clickStates = new Array(sortedHorses.length).fill(0); 
 
+        // --- (新增) 自訂斷層線插件 ---
+        const dmrGapPlugin = {
+            id: 'dmrGapPlugin',
+            afterDraw(chart) {
+                const ctx = chart.ctx;
+                const dataset = chart.data.datasets[0];
+                const meta = chart.getDatasetMeta(0);
+                const data = dataset.data;
+
+                ctx.save();
+                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = '#f87171'; // 紅色虛線
+                ctx.setLineDash([5, 5]); // 設定為虛線樣式
+
+                // 迴圈比對相鄰兩匹馬的分數差距
+                for (let i = 1; i < data.length; i++) {
+                    const gap = data[i-1] - data[i];
+                    
+                    // 如果分數差距 >= 1.5 分
+                    if (gap >= 1.5) {
+                        // 取得兩條棒子中間的 X 座標
+                        const x = (meta.data[i-1].x + meta.data[i].x) / 2;
+                        const topY = chart.chartArea.top;
+                        const bottomY = chart.chartArea.bottom;
+
+                        // 畫垂直分隔虛線
+                        ctx.beginPath();
+                        ctx.moveTo(x, topY);
+                        ctx.lineTo(x, bottomY);
+                        ctx.stroke();
+
+                        // 加上小文字提示斷層分數
+			ctx.fillStyle = '#f87171';
+                        ctx.font = 'bold 11px "Courier New"';
+                        ctx.textAlign = 'left'; // 改為靠左對齊，讓文字往座標右邊顯示
+                        // X 座標向右偏移 6px 避開虛線，Y 座標稍微往下移至 20 避免被邊界切到
+                        ctx.fillText(`-${gap.toFixed(1)} 分`, x + 6, topY + 20);
+                    }
+                }
+                ctx.restore();
+            }
+        };
+
+        // --- 初始化圖表 ---
         myChart = new Chart(ctx, {
             type: 'bar',
             data: { 
@@ -385,8 +557,8 @@
                                 dataset.borderColor[index] = '#ffffff';
                                 dataset.borderWidth[index] = 3;
                                 break;
-                            case 3: 
-                                dataset.backgroundColor[index] = '#38bdf8'; 
+                            case 3: // 變成灰色
+                                dataset.backgroundColor[index] = '#64748b'; 
                                 dataset.borderColor[index] = '#ffffff';
                                 dataset.borderWidth[index] = 3;
                                 break;
@@ -396,12 +568,15 @@
                                 dataset.borderWidth[index] = 0;
                                 break;
                         }
-                        chart.update();
+                        chart.update(); 
                     }
                 }
-            }
+            },
+            // 將斷層線插件加入這個圖表實例
+            plugins: [dmrGapPlugin] 
         });
         
+        // 渲染 Speed Map (放在最後)
         renderSpeedMap(data);
     }
 
@@ -427,6 +602,7 @@
         if (sortedHorses.length < 4) { card.classList.add('hidden'); return; }
         card.classList.remove('hidden');
 
+        // Standard
         const h1 = sortedHorses[0];
         const h2 = sortedHorses[1];
         const gap1_2 = h1.dmr_score - h2.dmr_score;
@@ -448,6 +624,7 @@
         document.getElementById('slip-banker').innerHTML = bankerHTML;
         document.getElementById('slip-legs').innerHTML = legsHTML;
 
+        // Value Hunt (Strict Value Mode)
         const valuePicks = sortedHorses.filter(h => h.rank_prediction.includes('Value'));
         const wildcardContainer = document.getElementById('slip-wildcard');
         const reasonContainer = document.querySelector('#slip-wildcard-reason').parentElement;
@@ -466,6 +643,69 @@
         } else {
             wildcardContainer.innerHTML = `<div class="flex flex-col items-center justify-center h-full py-2 opacity-50"><span class="text-slate-500 text-sm">本場無 Value 評級馬</span></div>`;
         }
+    }
+
+    // --- 存檔邏輯 (批量輸入優化) ---
+    function saveToSheet() {
+        if (!currentData) { alert("❌ 請先解析數據！"); return; }
+        const btn = document.getElementById('btn-save');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="loader"></span> 存檔中...'; btn.disabled = true;
+        
+        const payload = { action: 'save', data: currentData };
+        
+        fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(() => { 
+            // 存檔成功後的處理
+            alert("✅ 成功存入！"); 
+            btn.innerHTML = "✅ 已存檔"; 
+            
+            // 1. 清空輸入框，方便下一場輸入
+            document.getElementById('json-input').value = '';
+            
+            // 2. 只重置按鈕，不調用 fetchHistoryList()，避免跳轉
+            setTimeout(() => { 
+                btn.disabled = false; 
+                btn.innerHTML = originalText; 
+            }, 2000); 
+        })
+        .catch(err => { 
+            console.error(err); 
+            alert("❌ 存檔失敗"); 
+            btn.disabled = false; 
+            btn.innerHTML = originalText; 
+        });
+    }
+
+    function publishDay() {
+        if (!currentData) { alert("❌ 請先解析或載入一場賽事以確認日期！"); return; }
+        const date = currentData.race_info.date;
+        if(!confirm(`確定要發佈 [${date}] 的全日賽事總結到 Telegram 嗎？`)) return;
+        const btn = document.getElementById('btn-publish');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '🚀 發送中...'; btn.disabled = true;
+        const payload = { action: 'publish_day', date: date };
+        fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(() => { alert("✅ 總結報告指令已發送！"); btn.innerHTML = "✅ 已發送"; setTimeout(() => { btn.disabled = false; btn.innerHTML = originalText; }, 3000); })
+        .catch(err => { console.error(err); alert("❌ 發送失敗"); btn.disabled = false; btn.innerHTML = originalText; });
+    }
+
+    function updateResults() {
+        if (!currentData) return;
+        const r1 = document.getElementById('res-1').value;
+        const r2 = document.getElementById('res-2').value;
+        const r3 = document.getElementById('res-3').value;
+        const r4 = document.getElementById('res-4').value;
+        if(!r1) { alert("請至少輸入冠軍馬號"); return; }
+        const btn = document.getElementById('btn-update-result');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '更新中...'; btn.disabled = true;
+        const placings = {};
+        if(r1) placings[r1] = 1; if(r2) placings[r2] = 2; if(r3) placings[r3] = 3; if(r4) placings[r4] = 4;
+        const payload = { action: 'save_results', date: currentData.race_info.date, race_no: currentData.race_info.race_no, placings: placings };
+        fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(() => { alert("✅ 賽果已更新！"); btn.innerHTML = originalText; btn.disabled = false; document.getElementById('res-1').value = ''; document.getElementById('res-2').value = ''; document.getElementById('res-3').value = ''; document.getElementById('res-4').value = ''; loadHistory(currentData.race_info.date, currentData.race_info.race_no); })
+        .catch(err => { alert("❌ 更新失敗"); btn.innerHTML = originalText; btn.disabled = false; });
     }
 
     function fetchHistoryList() {
@@ -517,6 +757,8 @@
             container.appendChild(btn);
         });
         if (container.firstChild) container.firstChild.click();
+
+	scanParlayPicks(selectedDate, races);
     }
 
     function loadHistory(date, raceNo) {
@@ -526,6 +768,10 @@
             if(resp.result === 'success') {
                 currentData = resp.data;
                 renderDashboard(resp.data);
+                document.getElementById('input-section').classList.add('hidden');
+                document.getElementById('result-entry-section').classList.remove('hidden');
+                document.getElementById('btn-save').style.display = 'none';
+                document.getElementById('btn-publish').style.display = 'none';
             }
         })
         .catch(err => console.error("Load failed", err));
@@ -656,6 +902,132 @@
             `;
             mapContainer.innerHTML += zoneHTML;
         });
+    }
+
+// --- 完美排版版：自動掃描並產生左右分欄「賽日精選」 ---
+    async function scanParlayPicks(selectedDate, races) {
+        const container = document.getElementById('parlay-picks-container');
+        // 顯示載入中動畫
+        container.innerHTML = '<div class="text-sm text-emerald-500 flex items-center gap-2"><span class="loader border-emerald-500 border-t-transparent"></span> 正在運用 Quant Master 演算法掃描全日賽事，尋找高勝率場次...</div>';
+        container.classList.remove('hidden');
+
+        let validRaces = [];
+
+        try {
+            // 為每個單獨的 fetch 加上錯誤捕捉，避免其中一場數據有問題導致整天解析崩潰
+            const promises = races.map(r =>
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'get_race_detail', date: selectedDate, race_no: r.race_no })
+                })
+                .then(res => res.json())
+                .catch(err => ({ result: 'error', message: err.message }))
+            );
+
+            const results = await Promise.all(promises);
+
+            // 執行嚴格的過關篩選邏輯 (Parlay Filter)
+            results.forEach(resp => {
+                if (!resp || resp.result !== 'success' || !resp.data || !resp.data.race_info || !resp.data.horses) return;
+
+                const data = resp.data;
+                const ri = data.race_info;
+                const venue = ri.venue || "";
+                const course = ri.course || "";
+                const dist = parseInt(ri.distance) || 0;
+                const ppi = (ri.ppi_score || "").toLowerCase();
+                const cls = ri.class || "";
+
+                // ❌ 排除地雷 1: 泥地 (Dirt / All Weather)
+                if (course.includes('All Weather') || course.includes('Dirt') || venue.includes('All Weather')) return;
+                
+                // ❌ 排除地雷 2: 慢步速 (Slow Pace)
+                if (ppi.includes('slow')) return;
+                
+                // ❌ 排除地雷 3: 第五班 (Class 5) 賽事
+                if (cls.includes('Class 5') || cls.includes('5班')) return;
+                
+                // ❌ 排除地雷 4: 特定毒藥路程 (田草1000/1200/2000, 谷草1650)
+                if (venue.includes('Sha Tin') && (dist === 1000 || dist === 1200 || dist === 2000)) return;
+                if (venue.includes('Happy Valley') && dist === 1650) return;
+
+                // 👥 條件 5: 找出 Core 和 Value 馬，且數量必須剛好在 4 ~ 5 匹之間
+                const cvHorses = data.horses.filter(h => h.rank_prediction && (h.rank_prediction.includes('Core') || h.rank_prediction.includes('Value')));
+                if (cvHorses.length < 4 || cvHorses.length > 5) return;
+
+                // 通過所有嚴格考驗，列入精選名單！
+                cvHorses.sort((a, b) => b.dmr_score - a.dmr_score);
+                validRaces.push({ 
+                    race_no: ri.race_no, 
+                    horses: cvHorses, 
+                    venue: venue, 
+                    dist: dist, 
+                    cls: cls 
+                });
+            });
+
+            // 渲染結果 UI
+            if (validRaces.length === 0) {
+                container.innerHTML = '<div class="text-sm text-slate-400 italic py-2 flex items-center gap-2">🛡️ <span class="text-yellow-500 font-bold">系統判定：</span> 今日無符合「嚴格過關條件」的賽事，建議忍手或改為單場小注。</div>';
+            } else {
+                let html = '<div class="flex items-end justify-between mb-3"><h3 class="text-emerald-400 font-bold text-lg flex items-center gap-2">🎯 賽日精選</h3><span class="text-xs text-slate-500">已排除慢步速、泥地及低勝率路程</span></div>';
+                html += '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
+                
+                validRaces.forEach(r => {
+                    // 1. 分離出 Core 和 Value 馬匹
+                    const coreHorses = r.horses.filter(h => h.rank_prediction.includes('Core'));
+                    const valueHorses = r.horses.filter(h => h.rank_prediction.includes('Value'));
+
+                    // 2. 生成左側 Core HTML (帶有名稱)
+                    const coreHtml = coreHorses.length > 0 
+                        ? coreHorses.map(h => `
+                            <div class="flex items-center gap-2 bg-slate-900/50 px-2 py-1.5 rounded border border-amber-600/20 shadow-inner">
+                                <span class="bg-amber-600 text-white text-xs font-mono font-bold h-5 w-5 rounded-full flex items-center justify-center shrink-0 shadow-sm">${h.number}</span>
+                                <span class="text-xs text-slate-200 truncate font-semibold">${h.name_ch || h.name}</span>
+                            </div>
+                        `).join('')
+                        : '<div class="text-[11px] text-slate-600 italic pl-1">無</div>';
+
+                    // 3. 生成右側 Value HTML (帶有名稱)
+                    const valueHtml = valueHorses.length > 0 
+                        ? valueHorses.map(h => `
+                            <div class="flex items-center gap-2 bg-slate-900/50 px-2 py-1.5 rounded border border-blue-600/20 shadow-inner">
+                                <span class="bg-blue-600 text-white text-xs font-mono font-bold h-5 w-5 rounded-full flex items-center justify-center shrink-0 shadow-sm">${h.number}</span>
+                                <span class="text-xs text-slate-200 truncate font-semibold">${h.name_ch || h.name}</span>
+                            </div>
+                        `).join('')
+                        : '<div class="text-[11px] text-slate-600 italic pl-1">無</div>';
+
+                    // 4. 組裝成左右分欄卡片
+                    html += `
+                        <div class="bg-slate-800/80 border border-emerald-600/50 p-4 rounded-lg shadow-lg hover:border-emerald-400 transition-all duration-200 cursor-pointer hover:transform hover:-translate-y-1" onclick="document.querySelector('[data-race-no=\\'${r.race_no}\\']').click()">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-bold text-white text-xl">R${r.race_no}</span>
+                                <span class="text-xs font-bold text-emerald-300 bg-emerald-900/50 px-2 py-0.5 rounded">${r.venue.includes('Happy Valley') ? '谷草' : '田草'} ${r.dist}m</span>
+                            </div>
+                            <div class="text-[11px] text-slate-400 mb-3 pb-2 border-b border-slate-700/40">${r.cls}</div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="space-y-1.5">
+                                    <div class="text-[10px] font-black text-amber-500 tracking-wider uppercase flex items-center gap-1 mb-1">🔸 CORE</div>
+                                    ${coreHtml}
+                                </div>
+                                <div class="space-y-1.5">
+                                    <div class="text-[10px] font-black text-blue-400 tracking-wider uppercase flex items-center gap-1 mb-1">🔹 VALUE</div>
+                                    ${valueHtml}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            }
+
+        } catch (e) {
+            console.error("Error scanning parlay picks:", e);
+            container.innerHTML = '<div class="text-sm text-slate-400 italic py-2 flex items-center gap-2">ℹ️ 當日暫無符合條件的精選場次，或數據仍在載入中。</div>';
+        }
     }
 </script>
 
